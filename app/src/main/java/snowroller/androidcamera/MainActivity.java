@@ -44,6 +44,10 @@ public class MainActivity extends AppCompatActivity {
         //dispatchTakeThumbNailPictureIntent();
     }
 
+    public void onURLOpenButton(View v)
+    {
+        openWebPage("http://m.youtube.com");
+    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
@@ -52,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
             mImageView.setImageBitmap(imageBitmap);
             mButtonCapture.setEnabled(true);
         }
-
         else if (requestCode == REQUEST_TAKE_PHOTO && resultCode == RESULT_OK) {
            setPic();
            mButtonCapture.setEnabled(true);
@@ -132,5 +135,24 @@ public class MainActivity extends AppCompatActivity {
         mImageView.setImageBitmap(bitmap);
     }
 
+    public void openWebPage(String url) {
+        Uri webpage = Uri.parse(url);
+        Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_SEND);
+        intent.putExtra(Intent.EXTRA_TEXT, "This is my text to send.");
+        intent.setType("text/plain");
+
+        // This says something like "Share this photo with"
+        String title = "View with";
+         //Create intent to show the chooser dialog
+        Intent chooser = Intent.createChooser(intent, title);
+        // Verify the original intent will resolve to at least one activity
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivity(chooser);
+        }
+//        if (intent.resolveActivity(getPackageManager()) != null) {
+//            startActivity(intent);
+//        }
+    }
 
 }
