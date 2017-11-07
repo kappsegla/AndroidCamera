@@ -1,8 +1,13 @@
 package snowroller.androidcamera;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -11,6 +16,7 @@ import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 
 import java.io.File;
@@ -28,6 +34,8 @@ public class MainActivity extends AppCompatActivity {
 
     String mCurrentPhotoPath;
     private Uri photoURI;
+    //Need to store our BroadcastReceiver object for use when unregistering
+    private BroadcastReceiver br;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,6 +43,19 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         mImageView = findViewById(R.id.imageView);
         mButtonCapture = findViewById(R.id.button);
+
+        //Register BroadCast Receiver
+        br = new MyBroadCastReviecer();
+        IntentFilter filter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
+        filter.addAction(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+        this.registerReceiver(br, filter);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        //Unregister broadcast receiver
+        this.unregisterReceiver(br);
     }
 
     public void onCaptureButton(View v)
@@ -44,10 +65,23 @@ public class MainActivity extends AppCompatActivity {
         //dispatchTakeThumbNailPictureIntent();
     }
 
-    public void onURLOpenButton(View v)
+    public void onSendButton(View v)
     {
-        openWebPage("http://m.youtube.com");
+        //Create a send Intent and view Chooser dialog
+        Intent intent = new Intent();
+        intent.setAction(Intent.ACTION_SEND);
+        intent.putExtra(Intent.EXTRA_TEXT, "This is my text to send.");
+        intent.setType("text/plain");
+
+        String title = "Send with";
+        //Create intent to show the chooser dialog
+        Intent chooser = Intent.createChooser(intent, title);
+        // Verify the original intent will resolve to at least one activity
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivity(chooser);
+        }
     }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
@@ -135,24 +169,23 @@ public class MainActivity extends AppCompatActivity {
         mImageView.setImageBitmap(bitmap);
     }
 
-    public void openWebPage(String url) {
-        Uri webpage = Uri.parse(url);
-        Intent intent = new Intent();
-        intent.setAction(Intent.ACTION_SEND);
-        intent.putExtra(Intent.EXTRA_TEXT, "This is my text to send.");
-        intent.setType("text/plain");
+    class MyBroadCastReviecer extends BroadcastReceiver{
 
-        // This says something like "Share this photo with"
-        String title = "View with";
-         //Create intent to show the chooser dialog
-        Intent chooser = Intent.createChooser(intent, title);
-        // Verify the original intent will resolve to at least one activity
-        if (intent.resolveActivity(getPackageManager()) != null) {
-            startActivity(chooser);
+        private static final String TAG = "MyBroadCastReceiver";
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            ConnectivityManager cm =
+                    (ConnectivityManager)context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+            NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+            boolean isConnected = activeNetwork != null &&
+                    activeNetwork.isConnectedOrConnecting();
+
+            //Update CheckBox to reflect connection status.
+            CheckBox checkBox= findViewById(R.id.checkBox);
+            checkBox.setChecked(isConnected);
         }
-//        if (intent.resolveActivity(getPackageManager()) != null) {
-//            startActivity(intent);
-//        }
     }
 
 }
